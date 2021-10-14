@@ -1,0 +1,5 @@
+*
+!.gitignore
+!module01
+!module01/*_*
+!*/*_*/main.cpp
