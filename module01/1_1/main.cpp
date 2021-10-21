@@ -1,13 +1,15 @@
+//https://contest.yandex.com/contest/29755/run-report/55129296
+
 #include <iostream>
 
-using namespace std;
+int solve(int n) {
+    int ans = 0;
+    for (; n; ans += n /= 5);
+    return ans;
+}
 
 int main() {
     int n;
-    cin >> n;
-    int ans = 0;
-    for (; n; n /= 5) {
-        ans += n / 5;
-    }
-    cout << ans << endl;
+    std::cin >> n;
+    std::cout << solve(n) << std::endl;
 }
