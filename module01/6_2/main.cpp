@@ -1,13 +1,14 @@
+// https://contest.yandex.com/contest/29755/run-report/55230216
+
 #include <iostream>
+#include <vector>
 #include <set>
 
-using namespace std;
-
-int main() {
-    int n;
-    cin >> n;
-    multiset<int> s;
-    for (int x; cin >> x; s.insert(x));
+int solve(std::vector<int>& a) {
+    std::multiset<int> s;
+    for (auto x : a) {
+        s.insert(x);
+    }
     int ans = 0;
     for (int a, b; s.size() > 1;) {
         a = *s.begin();
@@ -17,5 +18,17 @@ int main() {
         s.insert(a + b);
         ans += a + b;
     }
-    cout << ans << endl;
+    return ans;
 }
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> a(n);
+    for (int i = 0; i < n; i++) {
+        std::cin >> a[i];
+    }
+    std::cout << solve(a) << std::endl;
+    return 0;
+}
+
