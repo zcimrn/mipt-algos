@@ -1,15 +1,15 @@
+// https://contest.yandex.com/contest/29755/run-report/55229143
+
 #include <iostream>
 #include <map>
 #include <stack>
-
-using namespace std;
 
 bool is_open(char c) {
     return c == '(' || c == '[' || c == '{';
 }
 
-signed main() {
-    map<char, char> b = {
+std::string solve(std::string a) {
+    std::map<char, char> b = {
         {'(', ')'},
         {'[', ']'},
         {'{', '}'},
@@ -17,25 +17,31 @@ signed main() {
         {']', '['},
         {'}', '{'}
     };
-    string a;
-    cin >> a;
-    stack<char> s;
-    for (auto c: a) {
+    std::stack<char> s;
+    for (auto c : a) {
         if (s.size() && is_open(s.top()) && b[s.top()] == c) {
             s.pop();
             continue;
         }
         if (s.size() && is_open(s.top()) && !is_open(c)) {
-            cout << "IMPOSSIBLE" << endl;
-            return 0;
+            return "IMPOSSIBLE";
         }
         s.push(c);
     }
     for (; s.size() && is_open(s.top()); s.pop()) {
         a += b[s.top()];
     }
+    std::string t = "";
     for (; s.size(); s.pop()) {
-        cout << b[s.top()];
+        t += b[s.top()];
     }
-    cout << a << endl;
+    return t + a;
 }
+
+int main() {
+    std::string a;
+    std::cin >> a;
+    std::cout << solve(a) << std::endl;
+    return 0;
+}
+
