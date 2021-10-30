@@ -1,5 +1,5 @@
 *
 !.gitignore
-!module01
-!module01/*_*
+!module*
+!module*/*_*
 !*/*_*/main.cpp
