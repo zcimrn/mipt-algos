@@ -1,16 +1,13 @@
-// https://contest.yandex.com/contest/30914/run-report/55659029
+// https://contest.yandex.com/contest/30914/run-report/55682172
 
 #include <iostream>
 #include <vector>
 #include <algorithm>
 
 struct box {
-    int x = 0, y = 0, z = 0, n = 0;
+    int x, y, z, num;
 
-    box(int _x, int _y, int _z) {
-        x = _x;
-        y = _y;
-        z = _z;
+    void flip() {
         if (x > y) {
             std::swap(x, y);
         }
@@ -21,34 +18,38 @@ struct box {
             std::swap(y, z);
         }
     }
+
+    bool operator<(box& other) {
+        return x < other.x && y < other.y && z < other.z;
+    }
 };
 
-bool cmp(box a, box b) {
-    return a.x < b.x && a.y < b.y && a.z < b.z;
-}
-
-std::vector<int> solve(std::vector<box>& a) {
-    for (int i = 0; i < a.size(); i++) {
-        a[i].n = i;
+void sort_boxes(std::vector<box>& boxes) {
+    int n = boxes.size();
+    for (int i = 0; i < n; i++) {
+        boxes[i].flip();
     }
-    std::stable_sort(a.begin(), a.end(), cmp);
-    std::vector<int> ans(a.size());
-    for (int i = 0; i < a.size(); i++) {
-        ans[i] = a[i].n;
+    for (int i = 1; i < n; i++) {
+        auto box = boxes[i];
+        int j = i - 1;
+        for (; j >= 0 && box < boxes[j]; j--) {
+            boxes[j + 1] = boxes[j];
+        }
+        boxes[j + 1] = box;
     }
-    return ans;
 }
 
 int main() {
     int n;
     std::cin >> n;
-    std::vector<box> a;
-    for (int x, y, z, i = 0; i < n; i++) {
-        std::cin >> x >> y >> z;
-        a.push_back({x, y, z});
+    std::vector<box> boxes(n);
+    for (int i = 0; i < n; i++) {
+        std::cin >> boxes[i].x >> boxes[i].y >> boxes[i].z;
+        boxes[i].num = i;
     }
-    for (int x : solve(a)) {
-        std::cout << x << ' ';
+    sort_boxes(boxes);
+    for (auto box : boxes) {
+        std::cout << box.num << ' ';
     }
     std::cout << std::endl;
     return 0;
