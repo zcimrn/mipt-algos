@@ -1,41 +1,41 @@
-// https://contest.yandex.com/contest/30914/run-report/55659178
+// https://contest.yandex.com/contest/30914/run-report/55686340
 
 #include <iostream>
 #include <vector>
-#include <algorithm>
+#include <queue>
 
-int solve(std::vector<std::pair<int, int>>& v) {
-    std::vector<std::pair<int, char>> a;
-    for (auto x : v) {
-        if (x.first == x.second) {
+int get_one_layer_length(std::vector<std::pair<int, int>>& sections) {
+    std::priority_queue<std::pair<int, char>, std::vector<std::pair<int, char>>, std::greater<std::pair<int, int>>> points;
+    for (auto section : sections) {
+        if (section.first == section.second) {
             continue;
         }
-        a.push_back({std::min(x.first, x.second), 1});
-        a.push_back({std::max(x.first, x.second), -1});
+        points.push({std::min(section.first, section.second), 1});
+        points.push({std::max(section.first, section.second), -1});
     }
-    std::stable_sort(a.begin(), a.end());
-    int ans = 0, p = -2e9, c = 0;
-    for (int i = 0; i < a.size(); i++) {
-        c += a[i].second;
-        if (c == 1) {
-            p = a[i].first;
+    int answer = 0, start_point = -2e9, layer = 0;
+    for (int point; points.size(); points.pop()) {
+        point = points.top().first;
+        layer += points.top().second;
+        if (layer == 1) {
+            start_point = point;
         }
-        if (c != 1 && p != -2e9) {
-            ans += a[i].first - p;
-            p = -2e9;
+        else if (start_point != -2e9) {
+            answer += point - start_point;
+            start_point = -2e9;
         }
     }
-    return ans;
+    return answer;
 }
 
 int main() {
     int n;
     std::cin >> n;
-    std::vector<std::pair<int, int>> a(n);
+    std::vector<std::pair<int, int>> sections(n);
     for (int i = 0; i < n; i++) {
-        std::cin >> a[i].first >> a[i].second;
+        std::cin >> sections[i].first >> sections[i].second;
     }
-    std::cout << solve(a) << std::endl;
+    std::cout << get_one_layer_length(sections) << std::endl;
     return 0;
 }
 
