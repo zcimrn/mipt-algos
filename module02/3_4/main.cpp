@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/30914/run-report/55687341
+// https://contest.yandex.com/contest/30914/run-report/55704311
 
 #include <iostream>
 #include <vector>
@@ -22,12 +22,7 @@ int get_kth_order_stat(std::vector<int>& a, int k) {
         if (pivot == k) {
             return a[pivot];
         }
-        if (pivot < k) {
-            l = pivot;
-        }
-        else {
-            r = pivot;
-        }
+        pivot < k ? l = pivot : r = pivot;
     }
     return a[k];
 }
