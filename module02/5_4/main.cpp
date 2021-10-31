@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/30914/run-report/55731373
+// https://contest.yandex.com/contest/30914/run-report/55735133
 
 #include <iostream>
 #include <vector>
@@ -25,15 +25,14 @@ void super_sort(std::vector<unsigned long long>& a) {
     std::stack<frame> frames;
     frames.push({0, static_cast<int>(a.size()), 1ull << 63});
     for (; frames.size();) {
-        int l = frames.top().l, r = frames.top().r;
-        auto mask = frames.top().mask;
+        auto frame = frames.top();
         frames.pop();
-        int pivot = partition(a, l, r, mask);
-        if (pivot - l > 1 && mask > 1) {
-            frames.push({l, pivot, mask >> 1});
+        int pivot = partition(a, frame.l, frame.r, frame.mask);
+        if (pivot - frame.l > 1 && frame.mask > 1) {
+            frames.push({frame.l, pivot, frame.mask >> 1});
         }
-        if (r - pivot > 1 && mask > 1) {
-            frames.push({pivot, r, mask >> 1});
+        if (frame.r - pivot > 1 && frame.mask > 1) {
+            frames.push({pivot, frame.r, frame.mask >> 1});
         }
     }
 }
