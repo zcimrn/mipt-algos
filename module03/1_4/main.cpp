@@ -1,53 +1,105 @@
-// https://contest.yandex.com/contest/32613/run-report/59616734
+// https://contest.yandex.com/contest/32613/run-report/59627289
 
 #include <iostream>
 #include <vector>
 #include <queue>
 
-struct node {
-    int key;
-    node *l, *r;
+template<class T>
+class BinarySearchTreeNode {
+    T key;
+    BinarySearchTreeNode<T> *left = nullptr, *right = nullptr;
 
-    node() : key {0}, l {0}, r {0} {}
+public:
+    BinarySearchTreeNode(T key) : key{key} {}
 
-    node(int key) : key {key} {}
+    T getKey() {
+        return key;
+    }
 
-    node(int key, node *l, node *r) : key {key}, l {l}, r {r} {}
+    void setLeft(BinarySearchTreeNode<T> *left) {
+        this->left = left;
+    }
+
+    BinarySearchTreeNode<T>* getLeft() {
+        return left;
+    }
+
+    void setRight(BinarySearchTreeNode<T> *right) {
+        this->right = right;
+    }
+
+    BinarySearchTreeNode<T>* getRight() {
+        return right;
+    }
 };
 
-void add(node *root, int key) {
-    for (;;) {
-        if (key < root->key && root->l) {
-            root = root->l;
-            continue;
-        }
-        if (key >= root->key && root->r) {
-            root = root->r;
-            continue;
-        }
-        break;
-    }
-    (key < root->key ? root->l : root->r) = new node(key);
-}
+template<class T>
+class BinarySearchTree {
+    BinarySearchTreeNode<T> *root = nullptr;
 
-void solve(std::vector<int>& a) {
-    int n = a.size();
-    node *root = new node(a[0]);
-    for (int i = 1; i < n; add(root, a[i++]));
-    std::queue<node*> q;
-    q.push(root);
-    for (int i = 0; q.size();) {
-        root = q.front();
-        q.pop();
-        a[i++] = root->key;
-        if (root->l) {
-            q.push(root->l);
-        }
-        if (root->r) {
-            q.push(root->r);
+public:
+    BinarySearchTree(std::vector<T>& keys) {
+        for (auto key : keys) {
+            insert(key);
         }
     }
-}
+
+    ~BinarySearchTree() {
+        std::queue<BinarySearchTreeNode<T>*> q;
+        q.push(root);
+        root = nullptr;
+        for (BinarySearchTreeNode<T> *node; q.size();) {
+            node = q.front();
+            q.pop();
+            if (node != nullptr) {
+                q.push(node->getLeft());
+                q.push(node->getRight());
+                delete node;
+            }
+        }
+    }
+
+    void insert(T key) {
+        if (root == nullptr) {
+            root = new BinarySearchTreeNode<T>(key);
+            return;
+        }
+        auto newNode = new BinarySearchTreeNode(key);
+        auto node = root;
+        for (;;) {
+            if (key < node->getKey()) {
+                if (node->getLeft() == nullptr) {
+                    node->setLeft(newNode);
+                    return;
+                }
+                node = node->getLeft();
+            }
+            else if (key >= node->getKey()) {
+                if (node->getRight() == nullptr) {
+                    node->setRight(newNode);
+                    return;
+                }
+                node = node->getRight();
+            }
+        }
+    }
+
+    std::vector<T> BreadthFirstSearch() {
+        std::vector<T> keys;
+        std::queue<BinarySearchTreeNode<T>*> q;
+        q.push(root);
+        for (BinarySearchTreeNode<T> *node; q.size();) {
+            node = q.front();
+            q.pop();
+            if (node != nullptr) {
+                keys.push_back(node->getKey());
+                q.push(node->getLeft());
+                q.push(node->getRight());
+            }
+        }
+        return std::move(keys);
+    }
+};
 
 int main() {
     std::ios::sync_with_stdio(0);
@@ -60,11 +112,12 @@ int main() {
     std::cerr.precision(16);
     int n;
     std::cin >> n;
-    std::vector<int> a(n);
-    for (int i = 0; i < n; std::cin >> a[i++]);
-    solve(a);
-    for (int x : a) {
-        std::cout << x << ' ';
+    std::vector<int> keys(n);
+    for (int i = 0; i < n; std::cin >> keys[i++]);
+    BinarySearchTree<int> binarySearchTree(keys);
+    keys = binarySearchTree.BreadthFirstSearch();
+    for (int key : keys) {
+        std::cout << key << ' ';
     }
     std::cout << std::endl;
     return 0;
