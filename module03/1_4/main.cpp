@@ -1,100 +1,82 @@
-// https://contest.yandex.com/contest/32613/run-report/59627289
+// https://contest.yandex.com/contest/32613/run-report/59702907
 
 #include <iostream>
 #include <vector>
 #include <queue>
 
-template<class T>
-class BinarySearchTreeNode {
-    T key;
-    BinarySearchTreeNode<T> *left = nullptr, *right = nullptr;
-
-public:
-    BinarySearchTreeNode(T key) : key{key} {}
-
-    T getKey() {
-        return key;
-    }
-
-    void setLeft(BinarySearchTreeNode<T> *left) {
-        this->left = left;
-    }
-
-    BinarySearchTreeNode<T>* getLeft() {
-        return left;
-    }
-
-    void setRight(BinarySearchTreeNode<T> *right) {
-        this->right = right;
-    }
-
-    BinarySearchTreeNode<T>* getRight() {
-        return right;
-    }
-};
-
-template<class T>
+template <class T>
 class BinarySearchTree {
-    BinarySearchTreeNode<T> *root = nullptr;
+    using Node = BinarySearchTree<T>;
+
+private:
+    T key{};
+    unsigned size = 0;
+    Node *left = nullptr, *right = nullptr;
+
+    BinarySearchTree(const T& key) : key{key} {}
+
+    BinarySearchTree(const T& key, Node* left, Node* right) :
+        key{key}, left{left}, right{right} {}
 
 public:
-    BinarySearchTree(std::vector<T>& keys) {
+    BinarySearchTree() = default;
+
+    BinarySearchTree(const Node&) = delete;
+
+    BinarySearchTree& operator=(const Node&) = delete;
+
+    BinarySearchTree(const std::vector<T>& keys) {
         for (auto key : keys) {
             insert(key);
         }
     }
 
     ~BinarySearchTree() {
-        std::queue<BinarySearchTreeNode<T>*> q;
-        q.push(root);
-        root = nullptr;
-        for (BinarySearchTreeNode<T> *node; q.size();) {
-            node = q.front();
-            q.pop();
-            if (node != nullptr) {
-                q.push(node->getLeft());
-                q.push(node->getRight());
-                delete node;
-            }
+        if (left != nullptr) {
+            delete left;
+        }
+        if (right != nullptr) {
+            delete right;
         }
     }
 
     void insert(T key) {
-        if (root == nullptr) {
-            root = new BinarySearchTreeNode<T>(key);
+        size++;
+        if (size == 1) {
+            this->key = key;
             return;
         }
-        auto newNode = new BinarySearchTreeNode(key);
-        auto node = root;
+        auto node = this;
         for (;;) {
-            if (key < node->getKey()) {
-                if (node->getLeft() == nullptr) {
-                    node->setLeft(newNode);
-                    return;
-                }
-                node = node->getLeft();
+            if (key < node->key && node->left != nullptr) {
+                node = node->left;
             }
-            else if (key >= node->getKey()) {
-                if (node->getRight() == nullptr) {
-                    node->setRight(newNode);
-                    return;
-                }
-                node = node->getRight();
+            else if (key >= node->key && node->right != nullptr) {
+                node = node->right;
+            }
+            else {
+                break;
             }
         }
+        (key < node->key ? node->left : node->right) = new Node(key);
     }
 
-    std::vector<T> BreadthFirstSearch() {
-        std::vector<T> keys;
-        std::queue<BinarySearchTreeNode<T>*> q;
-        q.push(root);
-        for (BinarySearchTreeNode<T> *node; q.size();) {
-            node = q.front();
+    std::vector<T> LevelOrderTraverse() {
+        std::vector<T> keys(size);
+        if (size == 0) {
+            return std::move(keys);
+        }
+        std::queue<Node*> q;
+        q.push(this);
+        for (unsigned i = 0; q.size(); i++) {
+            auto node = q.front();
             q.pop();
-            if (node != nullptr) {
-                keys.push_back(node->getKey());
-                q.push(node->getLeft());
-                q.push(node->getRight());
+            keys[i] = node->key;
+            if (node->left != nullptr) {
+                q.push(node->left);
+            }
+            if (node->right != nullptr) {
+                q.push(node->right);
             }
         }
         return std::move(keys);
@@ -115,7 +97,7 @@ int main() {
     std::vector<int> keys(n);
     for (int i = 0; i < n; std::cin >> keys[i++]);
     BinarySearchTree<int> binarySearchTree(keys);
-    keys = binarySearchTree.BreadthFirstSearch();
+    keys = binarySearchTree.LevelOrderTraverse();
     for (int key : keys) {
         std::cout << key << ' ';
     }
