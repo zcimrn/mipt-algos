@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/32613/run-report/59834483
+//https://contest.yandex.com/contest/32613/run-report/59844580
 
 #include <iostream>
 #include <vector>
@@ -6,13 +6,45 @@
 
 template <class T>
 class Node {
-public:
+private:
     T key{};
     Node<T> *left{}, *right{};
 
-    Node(const T& key) : key{key} {}
+public:
+    Node(const T& key, Node* left = {}, Node* right = {}) :
+        key{key}, left{left}, right{right} {}
 
-    Node(const T& key, Node* left, Node* right) : key{key}, left{left}, right{right} {}
+    void set_key(const T& key) {
+        this->key = key;
+    }
+
+    const T& get_key() {
+        return key;
+    }
+
+    void set_left(Node* left) {
+        this->left = left;
+    }
+
+    bool has_left() {
+        return left != nullptr;
+    }
+
+    Node* get_left() {
+        return left;
+    }
+
+    void set_right(Node* right) {
+        this->right = right;
+    }
+
+    bool has_right() {
+        return right != nullptr;
+    }
+
+    Node* get_right() {
+        return right;
+    }
 
     void debug(char lr = 0, std::string margin = "") {
         auto left_margin = margin, right_margin = margin;
@@ -56,17 +88,17 @@ private:
         for (Node<T>* node; q.size();) {
             node = q.front();
             q.pop();
-            if (node->left != nullptr) {
-                q.push(node->left);
+            if (node->has_left()) {
+                q.push(node->get_left());
             }
-            if (node->right != nullptr) {
-                q.push(node->right);
+            if (node->has_right()) {
+                q.push(node->get_right());
             }
             if (destruct) {
                 delete node;
             }
             else {
-                keys.push_back(node->key);
+                keys.push_back(node->get_key());
             }
         }
         return std::move(keys);
@@ -107,17 +139,22 @@ public:
         }
         auto node = root;
         for (;;) {
-            if (key < node->key && node->left != nullptr) {
-                node = node->left;
+            if (key < node->get_key() && node->has_left()) {
+                node = node->get_left();
             }
-            else if (key >= node->key && node->right != nullptr) {
-                node = node->right;
+            else if (key >= node->get_key() && node->has_right()) {
+                node = node->get_right();
             }
             else {
                 break;
             }
         }
-        (key < node->key ? node->left : node->right) = new Node{key};
+        if (key < node->get_key()) {
+            node->set_left(new Node{key});
+        }
+        else {
+            node->set_right(new Node{key});
+        }
     }
 
     std::vector<T> level_order_traverse() {
