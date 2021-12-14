@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/32613/run-report/61067251
+// https://contest.yandex.com/contest/32613/run-report/61072835
 
 #include <iostream>
 #include <queue>
@@ -210,7 +210,7 @@ int main() {
             avl_tree.insert(a);
         }
         else {
-            avl_tree.remove(std::abs(a));
+            avl_tree.remove(-a);
         }
         std::cout << avl_tree.get_kth_order_stat(k) << std::endl;
     }
