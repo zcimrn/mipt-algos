@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/32613/run-report/61033296
+// https://contest.yandex.com/contest/32613/run-report/61067251
 
 #include <iostream>
 #include <queue>
@@ -6,8 +6,7 @@
 template <class T>
 class AVLTree {
 private:
-    class Node {
-    public:
+    struct Node {
         T key{};
         int height = 1, count = 1;
         Node *left{}, *right{};
@@ -18,11 +17,11 @@ private:
 
     Node* root{};
 
-    int get_height(Node* node) {
+    int get_height(Node* node) const {
         return node == nullptr ? 0 : node->height;
     }
 
-    int get_count(Node* node) {
+    int get_count(Node* node) const {
         return node == nullptr ? 0 : node->count;
     }
 
@@ -31,7 +30,7 @@ private:
         node->count = get_count(node->left) + get_count(node->right) + 1;
     }
 
-    int get_balance(Node* node) {
+    int get_balance(Node* node) const {
         return get_height(node->left) - get_height(node->right);
     }
 
@@ -83,7 +82,7 @@ private:
         return balance(node);
     }
 
-    Node* get_min_rec(Node* node) {
+    Node* get_min_rec(Node* node) const {
         return node->left == nullptr ? node : get_min_rec(node->left);
     }
 
@@ -118,7 +117,7 @@ private:
         return balance(node);
     }
 
-    const T& get_kth_order_stat_rec(Node* node, int i) {
+    const T& get_kth_order_stat_rec(Node* node, int i) const {
         auto count = get_count(node->left);
         if (i < count) {
             return get_kth_order_stat_rec(node->left, i);
@@ -131,7 +130,7 @@ private:
         }
     }
 
-    void debug_rec(Node* node, char lr = 0, std::string margin = "") {
+    void debug_rec(Node* node, char lr = 0, std::string margin = "") const {
         auto left_margin = margin, right_margin = margin;
         if (lr == 'l') {
             left_margin += "            ";
@@ -188,11 +187,11 @@ public:
         root = remove_rec(root, key);
     }
 
-    const T& get_kth_order_stat(int i) {
+    const T& get_kth_order_stat(int i) const {
         return get_kth_order_stat_rec(root, i);
     }
 
-    void debug() {
+    void debug() const {
         std::cerr << std::endl;
         if (root != nullptr) {
             debug_rec(root);
@@ -211,7 +210,7 @@ int main() {
             avl_tree.insert(a);
         }
         else {
-            avl_tree.remove(-a);
+            avl_tree.remove(std::abs(a));
         }
         std::cout << avl_tree.get_kth_order_stat(k) << std::endl;
     }
