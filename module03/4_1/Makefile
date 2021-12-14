@@ -1,2 +1,3 @@
 all:
-	g++ --std=c++20 -O0 -g -o main main.cpp
+	clear
+	g++ --std=c++14 -O2 -o main main.cpp

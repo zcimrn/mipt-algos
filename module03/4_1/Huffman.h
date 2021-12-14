@@ -44,23 +44,11 @@ void Decode(IInputStream& input, IOutputStream& output);
 
 int main() {
     srand(time(0));
-    int n = 100000000;
+    int n = 89265;
     std::vector<byte> original(n);
     for (int i = 0; i < n; i++) {
-        unsigned temp = 100;
-        /*if (i % 2 == 1) {
-            temp = 101;
-        }
-        if (i % 4 == 3) {
-            temp = 102;
-        }
-        if (i % 8 == 7) {
-            temp = 103;
-        }
-        if (i % 16 == 15) {
-            temp = 104;
-        }*/
-        original[i] = rand() % 256;
+        unsigned temp = rand() % 256;
+        original[i] = temp;
     }
     /*freopen("file", "rb", stdin);
     for (int i = 0; i < n; i++) {

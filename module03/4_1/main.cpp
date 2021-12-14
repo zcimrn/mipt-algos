@@ -1,88 +1,132 @@
+// https://contest.yandex.com/contest/32613/run-report/61140935
+
+#include <cassert>
 #include <bitset>
 #include <queue>
 #include <stack>
+#include <algorithm>
 #include "Huffman.h"
 
-std::vector<std::pair<unsigned, unsigned>> temp;
+const int MAX_SIZE = 256;
 
 class BitReader {
 private:
-    std::bitset<1024> buffer{};
-    unsigned buffer_size{};
-    IInputStream& input;
+    std::vector<unsigned char> data;
+    std::vector<unsigned char>::iterator iterator = data.begin();
+    int buffer = 0, buffer_size = 0;
+
+    bool read_bit(bool& bit) {
+        if (buffer_size == 0) {
+            if (iterator == data.end()) {
+                bit = false;
+                return false;
+            }
+            buffer = *iterator++;
+            buffer_size += 8;
+        }
+        bit = buffer & (1 << --buffer_size);
+        buffer &= (1 << buffer_size) - 1;
+        return true;
+    }
 
 public:
-    BitReader(IInputStream& input) : input{input} {}
+    BitReader(IInputStream& input) {
+        for (unsigned char value; input.Read(value); data.push_back(value));
+        iterator = data.begin();
+    }
 
-    bool read(unsigned& value, unsigned size) {
-        if (buffer_size < size) {
-            for (byte value; buffer_size < size; buffer_size += 8) {
-                if (input.Read(value)) {
-                    buffer = (buffer << 8) | std::bitset<1024>(value);
-                }
-                else {
-                    return false;
-                }
+    void debug() const {
+        std::cerr << "input data" << std::endl;
+        for (int i = 0; i < data.size(); i++) {
+            std::cerr << i << ' ' << (int)data[i] << std::endl;
+        }
+        std::cerr << std::endl;
+    }
+
+    bool read(int& value, int size) {
+        assert(size <= 32);
+        value = 0;
+        for (bool bit; size > 0; size--) {
+            if (read_bit(bit)) {
+                value = value * 2 + bit;
+            }
+            else {
+                value = 0;
+                return false;
             }
         }
-        buffer_size -= size;
-        value = (buffer >> buffer_size).to_ulong();
-        buffer = buffer << 1024 - buffer_size >> 1024 - buffer_size;
         return true;
+    }
+
+    void reset() {
+        iterator = data.begin();
+        buffer = 0;
+        buffer_size = 0;
     }
 };
 
 class BitWriter {
 private:
-    std::bitset<1024> buffer{};
-    unsigned buffer_size{};
     IOutputStream& output;
+    std::vector<unsigned char> data;
+    int buffer = 0, buffer_size = 0;
 
-    void write_part() {
-        for (; buffer_size >= 8;) {
-            buffer_size -= 8;
-            output.Write((buffer >> buffer_size).to_ulong());
-            buffer = buffer << 1024 - buffer_size >> 1024 - buffer_size;
+    void flush_byte() {
+        assert(buffer_size == 8);
+        unsigned char byte = buffer;
+        data.push_back(byte);
+        output.Write(byte);
+        buffer = 0;
+        buffer_size = 0;
+    }
+
+    void write_bit(bool bit) {
+        buffer = buffer * 2 + bit;
+        buffer_size++;
+        if (buffer_size == 8) {
+            flush_byte();
         }
     }
 
 public:
     BitWriter(IOutputStream& output) : output{output} {}
 
-    void flush() {
-        write_part();
-        buffer <<= 8 - buffer_size;
-        output.Write((byte)buffer.to_ulong());
-        buffer >>= 8;
-        buffer_size = 0;
+    void debug() {
+        std::cerr << "output data:" << std::endl;
+        for (int i = 0; i < data.size(); i++) {
+            std::cerr << i << ' ' << (int)data[i] << std::endl;
+        }
+        std::cerr << std::endl;
     }
 
-    void write(unsigned value, unsigned size) {
-        buffer = (buffer << size) | std::bitset<1024>(value);
-        buffer_size += size;
-        write_part();
+    void flush() {
+        if (buffer_size > 0) {
+            assert(buffer_size < 8);
+            buffer <<= 8 - buffer_size;
+            buffer_size = 8;
+            flush_byte();
+        }
+    }
+
+    void write(const std::bitset<MAX_SIZE>& value, int size) {
+        for (; size > 0;) {
+            write_bit(value[--size]);
+        }
     }
 };
 
 class Huffman {
 private:
-    IInputStream& input;
-    IOutputStream& output;
-    std::vector<byte> data;
-    std::vector<unsigned> frequencies;
-    std::vector<std::pair<unsigned, unsigned>> tree, codes;
-
-    void debug_data() {
-        std::cerr << "data:" << std::endl;
-        for (unsigned i = 0; i < data.size(); i++) {
-            std::cerr << i << ' ' << (unsigned)data[i] << std::endl;
-        }
-        std::cerr << std::endl;
-    }
+    BitReader& input;
+    BitWriter& output;
+    int data_size = 0;
+    std::vector<int> frequencies;
+    std::vector<std::pair<int, int>> tree;
+    std::vector<std::pair<std::bitset<MAX_SIZE>, int>> codes;
 
     void debug_frequencies() {
         std::cerr << "frequencies:" << std::endl;
-        for (unsigned i = 0; i < frequencies.size(); i++) {
+        for (int i = 0; i < frequencies.size(); i++) {
             if (frequencies[i]) {
                 std::cerr << i << ' ' << frequencies[i] << std::endl;
             }
@@ -102,39 +146,37 @@ private:
         std::cerr << "codes:" << std::endl;
         for (int i = 0; i < codes.size(); i++) {
             if (codes[i].second) {
-                auto code = std::bitset<1024>(codes[i].first).to_string();
-                reverse(code.begin(), code.end());
+                auto code = codes[i].first.to_string();
+                std::reverse(code.begin(), code.end());
                 code.resize(codes[i].second);
-                reverse(code.begin(), code.end());
+                std::reverse(code.begin(), code.end());
                 std::cerr << i << ' ' << code << ' ' << codes[i].second << std::endl;
             }
         }
         std::cerr << std::endl;
     }
 
-    void read_data() {
-        data.resize(0);
-        for (byte value; input.Read(value); data.push_back(value));
-    }
-
     void count_frequencies() {
+        frequencies.resize(0);
         frequencies.resize(256);
-        for (auto value : data) {
+        for (int value; input.read(value, 8);) {
             frequencies[value]++;
+            data_size++;
         }
+        input.reset();
     }
 
     void make_tree() {
         tree.resize(0);
         std::priority_queue<
-            std::pair<unsigned, unsigned>,
-            std::vector<std::pair<unsigned, unsigned>>,
-            std::greater<std::pair<unsigned, unsigned>>
+            std::pair<int, int>,
+            std::vector<std::pair<int, int>>,
+            std::greater<std::pair<int, int>>
         > heap;
-        for (int i = 0; i < 256; i++) {
+        for (int i = 0; i < frequencies.size(); i++) {
             if (frequencies[i]) {
                 heap.push({frequencies[i], tree.size()});
-                tree.push_back({i, 511});
+                tree.push_back({i, -1});
             }
         }
         for (; heap.size() > 1;) {
@@ -147,78 +189,74 @@ private:
         }
     }
 
-    void make_codes_dfs(unsigned i, unsigned code, unsigned code_size) {
-        if (tree[i].second == 511) {
+    void make_codes_rec(int i, std::bitset<MAX_SIZE>& code, int code_size) {
+        if (tree[i].second == -1) {
             codes[tree[i].first] = {code, code_size};
             return;
         }
-        make_codes_dfs(tree[i].first, code * 2, code_size + 1);
-        make_codes_dfs(tree[i].second, code * 2 + 1, code_size + 1);
+        code <<= 1;
+        make_codes_rec(tree[i].first, code, code_size + 1);
+        code[0] = true;
+        make_codes_rec(tree[i].second, code, code_size + 1);
+        code >>= 1;
     }
 
     void make_codes() {
+        codes.resize(0);
         codes.resize(256);
-        make_codes_dfs(tree.size() - 1, 0, 0);
+        std::bitset<MAX_SIZE> code;
+        make_codes_rec(tree.size() - 1, code, 0);
     }
 
-    void write_tree_dfs(BitWriter& bit_writer, unsigned i, bool only_commands = false) {
-        if (tree[i].second == 511) {
+    void write_tree_rec(int i, bool only_commands = false) {
+        if (tree[i].second == -1) {
             if (only_commands) {
-                bit_writer.write(0, 1);
-                std::cerr << "get value " << tree[i].first << std::endl;
+                output.write(0, 1);
             }
             else {
-                bit_writer.write(tree[i].first, 8);
+                output.write(tree[i].first, 8);
             }
             return;
         }
-        write_tree_dfs(bit_writer, tree[i].first, only_commands);
-        write_tree_dfs(bit_writer, tree[i].second, only_commands);
+        write_tree_rec(tree[i].first, only_commands);
+        write_tree_rec(tree[i].second, only_commands);
         if (only_commands) {
-            bit_writer.write(1, 1);
-            std::cerr << "make node" << std::endl;
+            output.write(1, 1);
         }
     }
 
-    void write_tree(BitWriter& bit_writer) {
-        unsigned frequencies_count = 0;
+    void write_tree() {
+        int frequencies_count = 0;
         for (auto frequency : frequencies) {
             if (frequency) {
                 frequencies_count++;
             }
         }
-        std::cerr << "frequencies_count: " << frequencies_count << std::endl;
-        bit_writer.write(frequencies_count % 256, 8);
-        write_tree_dfs(bit_writer, tree.size() - 1);
-        write_tree_dfs(bit_writer, tree.size() - 1, true);
+        output.write(frequencies_count, 8);
+        write_tree_rec(tree.size() - 1);
+        write_tree_rec(tree.size() - 1, true);
     }
 
-    void write_encoded(BitWriter& bit_writer) {
-        bit_writer.write(data.size(), 64);
-        for (auto value : data) {
-            auto [code, code_size] = codes[value];
-            bit_writer.write(code, code_size);
+    void write_encoded() {
+        output.write(data_size, 32);
+        for (int value; input.read(value, 8);) {
+            output.write(codes[value].first, codes[value].second);
         }
     }
 
-    void read_tree(BitReader& bit_reader) {
+    void read_tree() {
         tree.resize(0);
-        unsigned size;
-        bit_reader.read(size, 8);
-        size = (size ? size : 256);
-        std::cerr << "size: " << size << std::endl;
-        std::vector<unsigned> values(size);
-        for (unsigned i = 0; i < size; i++) {
-            bit_reader.read(values[i], 8);
+        int size;
+        input.read(size, 8);
+        size = (size ? size : 256); // here is a problem, what if the size is really equal to 0???
+        std::vector<int> values(size);
+        for (int i = 0; i < size; i++) {
+            input.read(values[i], 8);
         }
-        std::stack<std::pair<unsigned, unsigned>> s;
-        for (unsigned i = 0; i < size || s.size() > 1;) {
-            unsigned command;
-            if (!bit_reader.read(command, 1)) {
-                std::cerr << "can't read" << std::endl;
-                exit(0);
-            }
-            std::cerr << "command: " << (command ? "make node" : "get value") << std::endl;
+        std::stack<std::pair<int, int>> s;
+        for (int i = 0; i < size || s.size() > 1;) {
+            int command;
+            input.read(command, 1);
             if (command) {
                 auto right = s.top();
                 s.pop();
@@ -229,81 +267,61 @@ private:
                 s.push({tree.size() - 2, tree.size() - 1});
             }
             else {
-                s.push({values[i++], 511});
+                s.push({values[i++], -1});
             }
         }
         tree.push_back(s.top());
     }
 
-    void decode_data(BitReader& bit_reader) {
-        unsigned size;
-        bit_reader.read(size, 64);
-        data.resize(size);
-        for (unsigned i = 0, j; i < size; i++) {
+    void decode_data() {
+        int size;
+        input.read(size, 32);
+        for (int i = 0, j; i < size; i++) {
             j = tree.size() - 1;
-            for (unsigned bit; tree[j].second != 511;) {
-                bit_reader.read(bit, 1);
+            for (int bit; tree[j].second != -1;) {
+                input.read(bit, 1);
                 j = (bit ? tree[j].second : tree[j].first);
             }
-            data[i] = tree[j].first;
-        }
-    }
-
-    void write_data() {
-        for (auto value : data) {
-            output.Write(value);
+            output.write(tree[j].first, 8);
         }
     }
 
 
 public:
-    Huffman(IInputStream& input, IOutputStream& output) : input{input}, output{output} {}
+    Huffman(BitReader& input, BitWriter& output) : input{input}, output{output} {}
 
     void debug() {
-        debug_data();
         debug_frequencies();
         debug_tree();
         debug_codes();
     }
 
     void encode() {
-        std::cerr << "encoding..." << std::endl;
-        read_data();
-        temp_data = data;
         count_frequencies();
-        debug_frequencies();
         make_tree();
-        debug_tree();
+        write_tree();
         make_codes();
-        debug_codes();
-        temp = codes;
-        BitWriter bit_writer(output);
-        write_tree(bit_writer);
-        write_encoded(bit_writer);
-        bit_writer.flush();
+        write_encoded();
+        output.flush();
     }
 
     void decode() {
-        std::cerr << "decoding..." << std::endl;
-        BitReader bit_reader(input);
-        read_tree(bit_reader);
-        debug_tree();
-        make_codes();
-        debug_codes();
-        std::swap(temp, codes);
-        debug_codes();
-        std::cerr << (temp == codes ? "OK" : "FAILED") << std::endl;
-        decode_data(bit_reader);
-        write_data();
+        read_tree();
+        decode_data();
+        output.flush();
     }
 };
 
 void Encode(IInputStream& input, IOutputStream& output) {
-    Huffman huffman(input, output);
+    BitReader bit_reader(input);
+    BitWriter bit_writer(output);
+    Huffman huffman{bit_reader, bit_writer};
     huffman.encode();
 }
 
 void Decode(IInputStream& input, IOutputStream& output) {
-    Huffman huffman(input, output);
+    BitReader bit_reader(input);
+    BitWriter bit_writer(output);
+    Huffman huffman{bit_reader, bit_writer};
     huffman.decode();
 }
