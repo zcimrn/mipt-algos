@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/35212/run-report/65263399
+// https://contest.yandex.com/contest/35212/run-report/65301233
 
 #include <algorithm>
 #include <iostream>
@@ -9,7 +9,7 @@ int main() {
     for (
         int weight, power;
         std::cin >> weight >> power;
-        athletes.push_back({weight, power})
+        athletes.emplace_back(weight, power)
     );
     std::sort(athletes.begin(), athletes.end());
     int all_weight = 0, count = 0;
