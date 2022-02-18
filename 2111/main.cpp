@@ -1,47 +1,96 @@
-#include <bitset>
+// https://contest.yandex.com/contest/35212/run-report/65267815
+
 #include <iostream>
 #include <string>
+#include <vector>
 
-#define AMUHb 200003
+class StringSet {
+private:
+    std::vector<std::string> table = std::vector<std::string>(8);
+    std::vector<bool> deleted = std::vector<bool>(8);
+    int count = 0;
 
-int hash(int p, const std::string& s) {
-    unsigned long long hash = 0;
-    for (auto c : s) {
-        hash = (hash * p + (c - 'a' + 1)) % AMUHb;
+    int hash(const std::string& key, int size) const {
+        int hash = 0;
+        for (auto c : key) {
+            hash = (hash * 29 + c - 'a') % size;
+        }
+        return hash;
     }
-    return hash;
-}
 
-int otets(const std::string& s) {
-    return hash(29, s);
-}
+    int get_index(const std::string& key, const std::vector<std::string>& table) const {
+        int size = table.size(), index = hash(key, size);
+        for (
+            int i = 0;
+            i < size && table[index] != key && table[index] != "";
+            index = (index + ++i) % size
+        );
+        return index;
+    }
 
-int sin(const std::string& s) {
-    return hash(31, s);
-}
+    int get_index(const std::string& key) const {
+        return get_index(key, table);
+    }
 
-int svyatoi_dukh(const std::string& s) {
-    return hash(37, s);
-}
+    void rehash() {
+        std::vector<std::string> new_table(table.size() * 2);
+        count = 0;
+        for (int i = 0, size = table.size(); i < size; i++) {
+            if (table[i] != "" && !deleted[i]) {
+                new_table[get_index(table[i], new_table)] = std::move(table[i]);
+                count++;
+            }
+            deleted[i] = false;
+        }
+        table = std::move(new_table);
+        deleted.resize(table.size());
+    }
+
+public:
+    bool contains(const std::string& key) const {
+        int index = get_index(key);
+        if (table[index] == "" || deleted[index]) {
+            return false;
+        }
+        return true;
+    }
+
+    bool insert(const std::string& key) {
+        int index = get_index(key);
+        if (table[index] != "" && !deleted[index]) {
+            return false;
+        }
+        table[index] = key;
+        deleted[index] = false;
+        count++;
+        if (count >= table.size() / 4 * 3) {
+            rehash();
+        }
+        return true;
+    }
+
+    bool erase(const std::string& key) {
+        int index = get_index(key);
+        if (table[index] == "" || deleted[index]) {
+            return false;
+        }
+        return deleted[index] = true;
+    }
+};
 
 int main() {
-    auto mp1 = new std::bitset<AMUHb>, mp2 = new std::bitset<AMUHb>, mp3 = new std::bitset<AMUHb>;
-    for (std::string c, s; std::cin >> c >> s;) {
-        bool pravoslavnyi = true;
-        long long h1 = otets(s), h2 = sin(s), h3 = svyatoi_dukh(s);
-        if (c == "+") {
-            pravoslavnyi = !((*mp1)[h1] && (*mp2)[h2] && (*mp3)[h3]);
-            (*mp1)[h1] = (*mp2)[h2] = (*mp3)[h3] = true;
+    StringSet string_set;
+    for (std::string command, key; std::cin >> command >> key;) {
+        bool ok;
+        if (command == "+") {
+            ok = string_set.insert(key);
         }
-        if (c == "-") {
-            pravoslavnyi = ((*mp1)[h1] && (*mp2)[h2] && (*mp3)[h3]);
-            if (pravoslavnyi) {
-                (*mp1)[h1] = (*mp2)[h2] = (*mp3)[h3] = false;
-            }
+        else if (command == "-") {
+            ok = string_set.erase(key);
         }
-        if (c == "?") {
-            pravoslavnyi = ((*mp1)[h1] && (*mp2)[h2] && (*mp3)[h3]);
+        else if (command == "?") {
+            ok = string_set.contains(key);
         }
-        std::cout << (pravoslavnyi ? "OK" : "FAIL") << std::endl;
+        std::cout << (ok ? "OK" : "FAIL") << std::endl;
     }
 }
