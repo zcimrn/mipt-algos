@@ -1,42 +1,47 @@
-// https://contest.yandex.com/contest/35212/run-report/65267815
+// https://contest.yandex.com/contest/35212/run-report/65304871
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-class StringSet {
-private:
-    std::vector<std::string> table = std::vector<std::string>(8);
-    std::vector<bool> deleted = std::vector<bool>(8);
-    int count = 0;
-
-    int hash(const std::string& key, int size) const {
-        int hash = 0;
+struct Hash {
+    unsigned long long operator()(const std::string& key) const {
+        unsigned long long hash = 0;
         for (auto c : key) {
-            hash = (hash * 29 + c - 'a') % size;
+            hash = (hash * 29 + c - 'a');
         }
         return hash;
     }
+};
 
-    int get_index(const std::string& key, const std::vector<std::string>& table) const {
-        int size = table.size(), index = hash(key, size);
+template <class Key, class Hash = std::hash<Key>>
+class HashSet {
+private:
+    std::vector<Key> table = std::vector<Key>(8);
+    std::vector<bool> deleted = std::vector<bool>(8);
+    int count = 0;
+    Hash hash = Hash();
+    Key null = Key();
+
+    int get_index(const Key& key, const std::vector<Key>& table) const {
+        int size = table.size(), index = hash(key) % size;
         for (
             int i = 0;
-            i < size && table[index] != key && table[index] != "";
+            i < size && table[index] != key && table[index] != null;
             index = (index + ++i) % size
         );
         return index;
     }
 
-    int get_index(const std::string& key) const {
+    int get_index(const Key& key) const {
         return get_index(key, table);
     }
 
     void rehash() {
-        std::vector<std::string> new_table(table.size() * 2);
+        std::vector<Key> new_table(table.size() * 2);
         count = 0;
         for (int i = 0, size = table.size(); i < size; i++) {
-            if (table[i] != "" && !deleted[i]) {
+            if (table[i] != null && !deleted[i]) {
                 new_table[get_index(table[i], new_table)] = std::move(table[i]);
                 count++;
             }
@@ -47,17 +52,14 @@ private:
     }
 
 public:
-    bool contains(const std::string& key) const {
+    bool contains(const Key& key) const {
         int index = get_index(key);
-        if (table[index] == "" || deleted[index]) {
-            return false;
-        }
-        return true;
+        return table[index] != null && !deleted[index];
     }
 
-    bool insert(const std::string& key) {
+    bool insert(const Key& key) {
         int index = get_index(key);
-        if (table[index] != "" && !deleted[index]) {
+        if (table[index] != null && !deleted[index]) {
             return false;
         }
         table[index] = key;
@@ -69,9 +71,9 @@ public:
         return true;
     }
 
-    bool erase(const std::string& key) {
+    bool erase(const Key& key) {
         int index = get_index(key);
-        if (table[index] == "" || deleted[index]) {
+        if (table[index] == null || deleted[index]) {
             return false;
         }
         return deleted[index] = true;
@@ -79,7 +81,7 @@ public:
 };
 
 int main() {
-    StringSet string_set;
+    HashSet<std::string, Hash> string_set;
     for (std::string command, key; std::cin >> command >> key;) {
         bool ok;
         if (command == "+") {
@@ -93,4 +95,5 @@ int main() {
         }
         std::cout << (ok ? "OK" : "FAIL") << std::endl;
     }
+    return 0;
 }
