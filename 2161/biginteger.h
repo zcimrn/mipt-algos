@@ -129,11 +129,14 @@ public:
 
     BigInteger() = default;
 
-    explicit BigInteger(const std::vector<int>& other_value, bool negative = false) : value(other_value), negative(negative) {
+    explicit BigInteger(const std::vector<int>& value_, bool negative_ = false) : value(value_), negative(negative_) {
         for (int i = 0, size = value.size(); i < size; i++) {
             assert(value[i] >= 0 && value[i] < MOD);
         }
         delete_leading_zeros(value);
+        if (value.size() == 0) {
+            negative = false;
+        }
     }
 
     explicit operator bool() const {
