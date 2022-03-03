@@ -1,3 +1,5 @@
+// https://contest.yandex.com/contest/35212/run-report/65705110
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -51,7 +53,8 @@ private:
             r.push_back(digit % MOD);
             digit /= MOD;
         }
-        return std::move(r);
+        //return std::move(r);
+        return r;
     }
 
     static std::vector<int> sub(const std::vector<int>& a, const std::vector<int>& b) {
@@ -67,7 +70,8 @@ private:
             }
         }
         delete_leading_zeros(r);
-        return std::move(r);
+        //return std::move(r);
+        return r;
     }
 
     static std::vector<int> mult(const std::vector<int>& a, int k) {
@@ -81,7 +85,8 @@ private:
         if (digit > 0) {
             r.push_back(digit);
         }
-        return std::move(r);
+        //return std::move(r);
+        return r;
     }
 
     static std::vector<int> mult(const std::vector<int>& a, const std::vector<int>& b) {
@@ -91,13 +96,15 @@ private:
             t.insert(t.end(), b.begin(), b.end());
             r = add(r, mult(t, a[i]));
         }
-        return std::move(r);
+        //return std::move(r);
+        return r;
     }
 
     static std::vector<int> div(const std::vector<int>& a, const std::vector<int>& b, bool remainder = false) {
         std::vector<int> r;
         if (less(a, b)) {
-            return remainder ? std::move(a) : std::move(r);
+            //return remainder ? std::move(a) : std::move(r);
+            return remainder ? a : r;
         }
         std::vector<int> t(a.end() - b.size() + 1, a.end());
         for (int i = a.size() - b.size(); i >= 0; i--) {
@@ -116,7 +123,8 @@ private:
             t = sub(t, mult(b, k));
         }
         reverse(r);
-        return remainder ? std::move(t) : std::move(r);
+        //return remainder ? std::move(t) : std::move(r);
+        return remainder ? t : r;
     }
 
 public:
@@ -170,7 +178,7 @@ public:
         }
     }
 
-    BigInteger(const char* s) : BigInteger(std::string(s)) {}
+    //BigInteger(const char* s) : BigInteger(std::string(s)) {}
 
     BigInteger(long long x) : BigInteger(std::to_string(x)) {}
 
@@ -186,14 +194,15 @@ public:
         s += (s.size() == 0 ? "0" : "");
         s += (negative ? "-" : "");
         reverse(s);
-        return std::move(s);
+        //return std::move(s);
+        return s;
     }
 
     bool operator<(const BigInteger& other) const {
         if (negative != other.negative) {
             return negative;
         }
-        return !negative && less(value, other.value) || negative && less(other.value, value);
+        return (!negative && less(value, other.value)) || (negative && less(other.value, value));
     }
 
     bool operator>(const BigInteger& other) const {
@@ -261,7 +270,8 @@ public:
     BigInteger operator++(int) {
         auto result = *this;
         operator++();
-        return std::move(result);
+        //return std::move(result);
+        return result;
     }
 
     BigInteger& operator-=(const BigInteger& other) {
@@ -275,7 +285,8 @@ public:
     BigInteger operator--(int) {
         auto result = *this;
         operator--();
-        return std::move(result);
+        //return std::move(result);
+        return result;
     }
 
     BigInteger& operator*=(const BigInteger& other) {
@@ -301,3 +312,29 @@ std::istream& operator>>(std::istream& stream, BigInteger& x) {
 std::ostream& operator<<(std::ostream& stream, const BigInteger& x) {
     return stream << x.toString();
 }
+
+template <class T>
+BigInteger operator+(const T& t, const BigInteger& x) {
+    return BigInteger(t) + x;
+}
+
+template <class T>
+BigInteger operator-(const T& t, const BigInteger& x) {
+    return BigInteger(t) - x;
+}
+
+template <class T>
+BigInteger operator*(const T& t, const BigInteger& x) {
+    return BigInteger(t) * x;
+}
+
+template <class T>
+BigInteger operator/(const T& t, const BigInteger& x) {
+    return BigInteger(t) / x;
+}
+
+template <class T>
+BigInteger operator%(const T& t, const BigInteger& x) {
+    return BigIntger(t) % x;
+}
+
