@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/35212/run-report/65705110
+// https://contest.yandex.com/contest/35212/run-report/65710360
 
 #include <iostream>
 #include <string>
@@ -46,47 +46,73 @@ private:
         return false;
     }
 
-    static std::vector<int> add(const std::vector<int>& a, const std::vector<int>& b) {
-        std::vector<int> r;
-        for (int i = 0, a_size = a.size(), b_size = b.size(), digit = 0; i < a_size || i < b_size || digit > 0; i++) {
-            digit += (i < a_size ? a[i] : 0) + (i < b_size ? b[i] : 0);
-            r.push_back(digit % MOD);
+    static void add(std::vector<int>& a, const std::vector<int>& b) {
+        int a_size = a.size(), b_size = b.size(), size = std::min(a_size, b_size);
+        long long digit = 0;
+        for (int i = 0; i < size; i++) {
+            digit += a[i] + b[i];
+            a[i] = digit % MOD;
             digit /= MOD;
         }
-        //return std::move(r);
-        return r;
-    }
-
-    static std::vector<int> sub(const std::vector<int>& a, const std::vector<int>& b) {
-        if (less(a, b)) {
-            return sub(b, a);
+        for (int i = size; i < a_size && digit > 0; i++) {
+            digit += a[i];
+            a[i] = digit % MOD;
+            digit /= MOD;
         }
-        auto r = a;
-        for (int i = 0, size = r.size(), b_size = b.size(); i < size; i++) {
-            r[i] -= (i < b_size ? b[i] : 0);
-            if (r[i] < 0) {
-                r[i + 1]--;
-                r[i] += MOD;
-            }
-        }
-        delete_leading_zeros(r);
-        //return std::move(r);
-        return r;
-    }
-
-    static std::vector<int> mult(const std::vector<int>& a, int k) {
-        std::vector<int> r;
-        long long digit = 0;
-        for (int i = 0, size = a.size(); i < size; i++) {
-            digit += (long long)a[i] * k;
-            r.push_back(digit % MOD);
+        for (int i = size; i < b_size; i++) {
+            digit += b[i];
+            a.push_back(digit % MOD);
             digit /= MOD;
         }
         if (digit > 0) {
-            r.push_back(digit);
+            a.push_back(digit);
         }
-        //return std::move(r);
-        return r;
+    }
+
+    static void invert(std::vector<int>& a) {
+        bool overflow = true;
+        for (int i = 0, size = a.size(); i < size; i++) {
+            a[i] = (MOD - 1 - a[i] + overflow) % MOD;
+            if (a[i] > 0) {
+                overflow = false;
+            }
+        }
+    }
+
+    static void sub(std::vector<int>& a, const std::vector<int>& b) {
+        if (a.size() < b.size()) {
+            a.resize(b.size());
+        }
+        int a_size = a.size(), b_size = b.size();
+        long long digit = 0;
+        for (int i = 0; i < b_size; i++) {
+            digit += MOD + a[i] - b[i];
+            a[i] = digit % MOD;
+            digit /= MOD;
+            digit--;
+        }
+        for (int i = b_size; i < a_size && digit == -1; i++) {
+            digit += MOD + a[i];
+            a[i] = digit % MOD;
+            digit /= MOD;
+            digit--;
+        }
+        if (digit == -1) {
+            invert(a);
+        }
+        delete_leading_zeros(a);
+    }
+
+    static void mult(std::vector<int>& a, int k) {
+        long long digit = 0;
+        for (int i = 0, size = a.size(); i < size; i++) {
+            digit += static_cast<long long>(a[i]) * k;
+            a[i] = digit % MOD;
+            digit /= MOD;
+        }
+        if (digit > 0) {
+            a.push_back(digit);
+        }
     }
 
     static std::vector<int> mult(const std::vector<int>& a, const std::vector<int>& b) {
@@ -94,47 +120,43 @@ private:
         for (int i = 0, a_size = a.size(); i < a_size; i++) {
             std::vector<int> t(i);
             t.insert(t.end(), b.begin(), b.end());
-            r = add(r, mult(t, a[i]));
+            mult(t, a[i]);
+            add(r, t);
         }
-        //return std::move(r);
         return r;
     }
 
     static std::vector<int> div(const std::vector<int>& a, const std::vector<int>& b, bool remainder = false) {
         std::vector<int> r;
         if (less(a, b)) {
-            //return remainder ? std::move(a) : std::move(r);
             return remainder ? a : r;
         }
         std::vector<int> t(a.end() - b.size() + 1, a.end());
         for (int i = a.size() - b.size(); i >= 0; i--) {
             t.insert(t.begin(), a[i]);
             int k = 0;
+            std::vector<int> c;
             for (int max_k = MOD, mid_k; k + 1 < max_k;) {
                 mid_k = (k + max_k) / 2;
-                if (less(t, mult(b, mid_k))) {
+                c = b;
+                mult(c, mid_k);
+                if (less(t, c)) {
                     max_k = mid_k;
                 }
                 else {
                     k = mid_k;
                 }
             }
+            c = b;
+            mult(c, k);
             r.push_back(k);
-            t = sub(t, mult(b, k));
+            sub(t, c);
         }
         reverse(r);
-        //return remainder ? std::move(t) : std::move(r);
         return remainder ? t : r;
     }
 
 public:
-    void debug() {
-        std::cerr << "debug "  << (negative ? "-" : "") << "value[" << value.size() << "]:" << std::endl;
-        for (int i = 0, size = value.size(); i < size; i++) {
-            std::cerr << i << ' ' << value[i] << std::endl;
-        }
-    }
-
     BigInteger() = default;
 
     explicit BigInteger(const std::vector<int>& value_, bool negative_ = false) : value(value_), negative(negative_) {
@@ -142,9 +164,6 @@ public:
             assert(value[i] >= 0 && value[i] < MOD);
         }
         delete_leading_zeros(value);
-        if (value.size() == 0) {
-            negative = false;
-        }
     }
 
     explicit operator bool() const {
@@ -178,8 +197,6 @@ public:
         }
     }
 
-    //BigInteger(const char* s) : BigInteger(std::string(s)) {}
-
     BigInteger(long long x) : BigInteger(std::to_string(x)) {}
 
     std::string toString() const {
@@ -192,9 +209,8 @@ public:
         }
         delete_leading_zeros(s);
         s += (s.size() == 0 ? "0" : "");
-        s += (negative ? "-" : "");
+        s += (negative && value.size() > 0 ? "-" : "");
         reverse(s);
-        //return std::move(s);
         return s;
     }
 
@@ -233,34 +249,43 @@ public:
         return std::move(BigInteger(value, !negative));
     }
 
-    BigInteger operator+(const BigInteger& other) const {
-        if (negative != other.negative) {
-            return BigInteger(sub(value, other.value), less(value, other.value) ? !negative : negative);
-        }
-        return BigInteger(add(value, other.value), negative);
-    }
-
-    BigInteger operator-(const BigInteger& other) const {
-        if (negative != other.negative) {
-            return BigInteger(add(value, other.value), negative);
-        }
-        return BigInteger(sub(value, other.value), less(value, other.value) ? !negative : negative);
-    }
-
-    BigInteger operator*(const BigInteger& other) const {
-        return BigInteger(mult(value, other.value), negative != other.negative);
-    }
-
-    BigInteger operator/(const BigInteger& other) const {
-        return BigInteger(div(value, other.value), negative != other.negative);
-    }
-
-    BigInteger operator%(const BigInteger& other) const {
-        return BigInteger(div(value, other.value, true), negative);
-    }
-
     BigInteger& operator+=(const BigInteger& other) {
-        return *this = *this + other;
+        if (negative == other.negative) {
+            add(value, other.value);
+        }
+        else {
+            negative = less(value, other.value) ? !negative : negative;
+            sub(value, other.value);
+        }
+        return *this;
+    }
+
+    BigInteger& operator-=(const BigInteger& other) {
+        if (negative == other.negative) {
+            negative = less(value, other.value) ? !negative : negative;
+            sub(value, other.value);
+        }
+        else {
+            add(value, other.value);
+        }
+        return *this;
+    }
+
+    BigInteger& operator*=(const BigInteger& other) {
+        negative = negative != other.negative;
+        value = mult(value, other.value);
+        return *this;
+    }
+
+    BigInteger& operator/=(const BigInteger& other) {
+        negative = negative != other.negative;
+        value = div(value, other.value);
+        return *this;
+    }
+
+    BigInteger& operator%=(const BigInteger& other) {
+        value = div(value, other.value, true);
+        return *this;
     }
 
     BigInteger& operator++() {
@@ -270,12 +295,7 @@ public:
     BigInteger operator++(int) {
         auto result = *this;
         operator++();
-        //return std::move(result);
         return result;
-    }
-
-    BigInteger& operator-=(const BigInteger& other) {
-        return *this = *this - other;
     }
 
     BigInteger& operator--() {
@@ -285,20 +305,27 @@ public:
     BigInteger operator--(int) {
         auto result = *this;
         operator--();
-        //return std::move(result);
         return result;
     }
 
-    BigInteger& operator*=(const BigInteger& other) {
-        return *this = *this * other;
+    BigInteger operator+(const BigInteger& other) const {
+        return BigInteger(*this) += other;
     }
 
-    BigInteger& operator/=(const BigInteger& other) {
-        return *this = *this / other;
+    BigInteger operator-(const BigInteger& other) const {
+        return BigInteger(*this) -= other;
     }
 
-    BigInteger& operator%=(const BigInteger& other) {
-        return *this = *this % other;
+    BigInteger operator*(const BigInteger& other) const {
+        return BigInteger(*this) *= other;
+    }
+
+    BigInteger operator/(const BigInteger& other) const {
+        return BigInteger(*this) /= other;
+    }
+
+    BigInteger operator%(const BigInteger& other) const {
+        return BigInteger(*this) %= other;
     }
 };
 
@@ -311,6 +338,36 @@ std::istream& operator>>(std::istream& stream, BigInteger& x) {
 
 std::ostream& operator<<(std::ostream& stream, const BigInteger& x) {
     return stream << x.toString();
+}
+
+template <class T>
+bool operator<(const T& t, const BigInteger& x) {
+    return BigInteger(t) < x;
+}
+
+template <class T>
+bool operator>(const T& t, const BigInteger& x) {
+    return BigInteger(t) > x;
+}
+
+template <class T>
+bool operator==(const T& t, const BigInteger& x) {
+    return BigInteger(t) == x;
+}
+
+template <class T>
+bool operator!=(const T& t, const BigInteger& x) {
+    return BigInteger(t) != x;
+}
+
+template <class T>
+bool operator<=(const T& t, const BigInteger& x) {
+    return BigInteger(t) <= x;
+}
+
+template <class T>
+bool operator>=(const T& t, const BigInteger& x) {
+    return BigInteger(t) >= x;
 }
 
 template <class T>
@@ -337,4 +394,3 @@ template <class T>
 BigInteger operator%(const T& t, const BigInteger& x) {
     return BigIntger(t) % x;
 }
-
