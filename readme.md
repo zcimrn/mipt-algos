@@ -10,3 +10,4 @@
 
 ## 2 семестр
 - [1 контест](https://contest.yandex.com/contest/35212/problems) и ещё [тут](https://contest.yandex.com/contest/36618/problems)
+- [2 контест](https://contest.yandex.com/contest/36361/problems)
