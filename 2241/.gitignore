@@ -1,2 +1,4 @@
-!Makefile
+*
+!.gitignore
 !main.cpp
+!Makefile
