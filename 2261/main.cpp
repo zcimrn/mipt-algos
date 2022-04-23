@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/36361/run-report/67710886
+// https://contest.yandex.com/contest/36361/run-report/67711973
 
 #include <iostream>
 #include <set>
@@ -21,7 +21,7 @@ class Graph {
     list_[v].emplace_back(u, weight);
   }
 
-  std::vector<std::pair<size_t, int>> GetEdges(size_t v) const {
+  std::vector<std::pair<size_t, int>> GetChildEdges(size_t v) const {
     return std::move(list_[v]);
   }
 };
@@ -43,8 +43,8 @@ Graph ReadGraph(size_t vertices_count, size_t edges_count) {
 int CountMSTLength(const Graph& graph) {
   size_t vertices_count = graph.GetVerticesCount();
   std::vector<bool> used(vertices_count);
-  std::vector<int> d(vertices_count, 1e9);
-  d[0] = 0;
+  std::vector<int> min_weights(vertices_count, 1e9);
+  min_weights[0] = 0;
   std::set<std::pair<int, size_t>> s;
   s.insert({0, 0});
   int mst_length = 0;
@@ -53,11 +53,11 @@ int CountMSTLength(const Graph& graph) {
     s.erase(s.begin());
     used[v] = true;
     mst_length += weight;
-    for (auto [u, weight] : graph.GetEdges(v)) {
-      if (!used[u] && d[u] > weight) {
-        s.erase({d[u], u});
-        d[u] = weight;
-        s.insert({d[u], u});
+    for (auto [u, weight] : graph.GetChildEdges(v)) {
+      if (!used[u] && min_weights[u] > weight) {
+        s.erase({min_weights[u], u});
+        min_weights[u] = weight;
+        s.insert({min_weights[u], u});
       }
     }
   }
