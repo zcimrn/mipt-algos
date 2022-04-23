@@ -1,2 +1,2 @@
 all:
-	g++ --std=c++14 -O2 -o main main.cpp
+	clang++ -std=c++17 -O2 -o main main.cpp
