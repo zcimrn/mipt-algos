@@ -1,6 +1,7 @@
-// https://contest.yandex.com/contest/36361/run-report/67715784
+// https://contest.yandex.com/contest/36361/run-report/67728344
 
 #include <iostream>
+#include <stack>
 #include <vector>
 
 class Graph {
@@ -37,46 +38,55 @@ Graph ReadGraph(size_t vertices_count, size_t edges_count) {
   return std::move(graph);
 }
 
-void TopSortRec(const Graph& graph, std::vector<bool>& used, std::vector<size_t>& order, size_t v) {
-  used[v] = true;
-  for (auto u : graph.GetChildren(v)) {
-    if (!used[u]) {
-      TopSortRec(graph, used, order, u);
-    }
-  }
-  order.push_back(v);
-}
-
 std::vector<size_t> TopSort(const Graph& graph) {
   size_t vertices_count = graph.GetVerticesCount();
   std::vector<bool> used(vertices_count);
   std::vector<size_t> order;
   for (size_t v = 0; v < vertices_count; v++) {
     if (!used[v]) {
-      TopSortRec(graph, used, order, v);
+      std::stack<std::pair<size_t, size_t>> stack;
+      stack.emplace(v, 0);
+      for (; stack.size() > 0;) {
+        auto [v, i] = stack.top();
+        used[v] = true;
+        const auto& children = graph.GetChildren(v);
+        for (; i < children.size() && used[children[i]]; i++) {
+        }
+        if (i < children.size()) {
+          stack.top().second = i + 1;
+          stack.emplace(children[i], 0);
+        } else {
+          stack.pop();
+          order.push_back(v);
+        }
+      }
     }
   }
   return std::move(order);
 }
 
-static const size_t NULL_COLOR = 1e18;
-
-void ColorRec(const Graph& graph, std::vector<size_t>& colors, size_t color, size_t v) {
-  colors[v] = color;
-  for (auto u : graph.GetChildren(v)) {
-    if (colors[u] == NULL_COLOR) {
-      ColorRec(graph, colors, color, u);
-    }
-  }
-}
-
 std::vector<size_t> OrderedColor(const Graph& graph, const std::vector<size_t>& order) {
+  static const size_t NULL_COLOR = 1e18;
   size_t vertices_count = graph.GetVerticesCount();
   std::vector<size_t> colors(vertices_count, NULL_COLOR);
   size_t color = 0;
   for (auto v : order) {
     if (colors[v] == NULL_COLOR) {
-      ColorRec(graph, colors, color, v);
+      std::stack<std::pair<size_t, size_t>> stack;
+      stack.emplace(v, 0);
+      for (; stack.size() > 0;) {
+        auto [v, i] = stack.top();
+        colors[v] = color;
+        const auto& children = graph.GetChildren(v);
+        for (; i < children.size() && colors[children[i]] != NULL_COLOR; i++) {
+        }
+        if (i < children.size()) {
+          stack.top().second = i + 1;
+          stack.emplace(children[i], 0);
+        } else {
+          stack.pop();
+        }
+      }
       color++;
     }
   }
