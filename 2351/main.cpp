@@ -1,12 +1,10 @@
-// https://contest.yandex.com/contest/37787/run-report/68152479
+// https://contest.yandex.com/contest/37787/run-report/68155698
 
 #include <cmath>
 #include <iostream>
 #include <vector>
 
-size_t CountDiffSubstrings(std::string s) {
-  s += '\0';
-  size_t n = s.size();
+std::vector<size_t> CountOrder(const std::string& s) {
   std::vector<size_t> temp(256);
   for (uint8_t c : s) {
     temp[c]++;
@@ -14,56 +12,82 @@ size_t CountDiffSubstrings(std::string s) {
   for (size_t i = 1; i < temp.size(); i++) {
     temp[i] += temp[i - 1];
   }
-  std::vector<size_t> order(n);
-  for (size_t i = 0; i < n; i++) {
+  size_t size = s.size();
+  std::vector<size_t> order(size);
+  for (size_t i = 0; i < size; i++) {
     order[--temp[static_cast<uint8_t>(s[i])]] = i;
   }
-  std::vector<std::vector<size_t>> classes(1, std::vector<size_t>(n));
-  classes[0][order[0]] = 0;
-  size_t classes_count = 1;
-  for (size_t i = 1; i < n; i++) {
+  return std::move(order);
+}
+
+size_t InitClasses(std::vector<std::vector<size_t>>& classes, const std::vector<size_t>& order, const std::string& s) {
+  size_t size = order.size(), last_class = 0;
+  classes.push_back(std::vector<size_t>(size));
+  classes[0][order[0]] = last_class;
+  for (size_t i = 1; i < size; i++) {
     if (s[order[i]] != s[order[i - 1]]) {
-      classes_count++;
+      last_class++;
     }
-    classes[0][order[i]] = classes_count - 1;
+    classes[0][order[i]] = last_class;
   }
-  for (size_t k = 0; (1ull << k) < n; k++) {
-    std::vector<size_t> new_order(n);
-    for (size_t i = 0; i < n; i++) {
-      new_order[i] = (order[i] + n - (1ull << k)) % n;
-    }
-    std::vector<size_t> temp(classes_count);
-    for (size_t i = 0; i < n; i++) {
-      temp[classes[k][new_order[i]]]++;
-    }
-    for (size_t i = 1; i < classes_count; i++) {
-      temp[i] += temp[i - 1];
-    }
-    for (int64_t i = n - 1; i >= 0; i--) {
-      order[--temp[classes[k][new_order[i]]]] = new_order[i];
-    }
-    classes.push_back(std::vector<size_t>(n));
-    classes[k + 1][order[0]] = 0;
-    classes_count = 1;
-    for (size_t i = 1; i < n; i++) {
-      if (classes[k][order[i]] != classes[k][order[i - 1]] ||
-          classes[k][(order[i] + (1ull << k)) % n] != classes[k][(order[i - 1] + (1ull << k)) % n]) {
-        classes_count++;
-      }
-      classes[k + 1][order[i]] = classes_count - 1;
-    }
+  return ++last_class;
+}
+
+void UpdateOrder(std::vector<size_t>& order, const std::vector<size_t>& classes, const size_t classes_count, const size_t offset) {
+  size_t size = order.size();
+  std::vector<size_t> new_order(size);
+  for (size_t i = 0; i < size; i++) {
+    new_order[i] = (order[i] + size - offset) % size;
   }
+  std::vector<size_t> temp(classes_count);
+  for (size_t i = 0; i < size; i++) {
+    temp[classes[new_order[i]]]++;
+  }
+  for (size_t i = 1; i < classes_count; i++) {
+    temp[i] += temp[i - 1];
+  }
+  for (int64_t i = size - 1; i >= 0; i--) {
+    order[--temp[classes[new_order[i]]]] = new_order[i];
+  }
+}
+
+size_t UpdateClasses(std::vector<std::vector<size_t>>& classes, const std::vector<size_t>& order, const size_t k) {
+  size_t size = order.size(), last_class = 0;
+  classes.push_back(std::vector<size_t>(size));
+  classes[k + 1][order[0]] = last_class;
+  for (size_t offset = (1ull << k), i = 1; i < size; i++) {
+    if (classes[k][order[i]] != classes[k][order[i - 1]] ||
+        classes[k][(order[i] + offset) % size] != classes[k][(order[i - 1] + offset) % size]) {
+      last_class++;
+    }
+    classes[k + 1][order[i]] = last_class;
+  }
+  return ++last_class;
+}
+
+std::pair<std::vector<size_t>, std::vector<std::vector<size_t>>> CountOrderAndClasses(const std::string& s) {
+  auto order = CountOrder(s);
+  std::vector<std::vector<size_t>> classes;
+  size_t classes_count = InitClasses(classes, order, s);
+  for (size_t k = 0, offset = (1ull << k), size = order.size(); offset < size; k++, offset *= 2) {
+    UpdateOrder(order, classes[k], classes_count, offset);
+    classes_count = UpdateClasses(classes, order, k);
+  }
+  return {std::move(order), std::move(classes)};
+}
+
+size_t CountDiffSubstrings(const std::vector<size_t>& order, const std::vector<std::vector<size_t>>& classes) {
   size_t diff_substrings_count = 0;
-  for (size_t i = 1; i < n; i++) {
+  for (size_t i = 1, size = order.size(); i < size; i++) {
     size_t lcp = 0;
-    for (int64_t l = order[i - 1], r = order[i], k = log(n); k >= 0; k--) {
+    for (int64_t l = order[i - 1], r = order[i], k = log(size), offset = (1ull << k); k >= 0; k--, offset /= 2) {
       if (classes[k][l] == classes[k][r]) {
-        lcp += (1ull << k);
-        l += (1ull << k);
-        r += (1ull << k);
+        lcp += offset;
+        l += offset;
+        r += offset;
       }
     }
-    diff_substrings_count += n - 1 - order[i] - lcp;
+    diff_substrings_count += size - 1 - order[i] - lcp;
   }
   return diff_substrings_count;
 }
@@ -71,6 +95,8 @@ size_t CountDiffSubstrings(std::string s) {
 int main() {
   std::string s;
   std::cin >> s;
-  std::cout << CountDiffSubstrings(s) << std::endl;
+  s += '\0';
+  auto [order, classes] = CountOrderAndClasses(s);
+  std::cout << CountDiffSubstrings(order, classes) << std::endl;
   return 0;
 }
