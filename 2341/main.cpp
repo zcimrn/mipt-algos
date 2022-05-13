@@ -1,21 +1,19 @@
-// https://contest.yandex.com/contest/37787/run-report/68359167
+// https://contest.yandex.com/contest/37787/run-report/68373854
 
 #include <iostream>
 #include <vector>
 
 class Trie {
  private:
-  struct Node {
+  class Node {
+   public:
     std::vector<int> Children = std::vector<int>(26, -1), Meta;
     int Value = 0, Parent = -1, SuffLink = -1, TerminalLink = -1;
     bool IsTerminal = false;
 
     Node() = default;
 
-    Node(int value, int parent) {
-      Value = value;
-      Parent = parent;
-    }
+    Node(int value, int parent) : Value(value), Parent(parent) {}
   };
 
   std::vector<Node> nodes = std::vector<Node>(1);
