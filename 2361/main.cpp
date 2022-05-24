@@ -1,4 +1,4 @@
-// https://contest.yandex.com/contest/37787/run-report/68582552
+// https://contest.yandex.com/contest/37787/run-report/68585803
 
 #include <algorithm>
 #include <iostream>
@@ -10,10 +10,15 @@ class SuffTree {
     int Start{0}, Count{0}, Parent{-1}, SuffLink{-1};
     bool IsLeaf{false}, IsCommon{false}, HasFirst{false}, HasSecond{false};
     std::vector<int> Children = std::vector<int>(28, -1);
+
+    Node() = default;
+
+    Node(int start, int count, int parent, bool is_leaf = false)
+        : Start{start}, Count{count}, Parent{parent}, IsLeaf{is_leaf} {}
   };
 
   std::string text;
-  std::vector<Node> nodes{2};
+  std::vector<Node> nodes{1};
 
   bool HasLetter(const int v, const int count, const uint8_t letter) const {
     if (count < nodes[v].Count) {
@@ -30,21 +35,12 @@ class SuffTree {
   }
 
   void AddLeaf(const int v, const int count, const int i) {
-    const uint8_t letter = text[i];
-    Node leaf;
-    leaf.Start = i;
-    leaf.Count = text.size() - leaf.Start;
-    leaf.Parent = v;
-    leaf.IsLeaf = true;
-    nodes[v].Children[letter] = nodes.size();
-    nodes.push_back(std::move(leaf));
+    nodes.emplace_back(i, text.size() - i, v, true);
+    nodes[v].Children[static_cast<uint8_t>(text[i])] = nodes.size() - 1;
   }
 
   int AddNode(const int v, const int count) {
-    Node node;
-    node.Start = nodes[v].Start;
-    node.Count = count;
-    node.Parent = nodes[v].Parent;
+    Node node(nodes[v].Start, count, nodes[v].Parent);
     node.Children[static_cast<uint8_t>(text[node.Start + count])] = v;
     nodes[v].Parent = nodes.size();
     nodes[v].Start += count;
@@ -120,9 +116,7 @@ class SuffTree {
  public:
   explicit SuffTree(const std::string& text) : text{text} {
     nodes[0].Children.assign(256, 1);
-    nodes[1].Start = -1;
-    nodes[1].Count = 1;
-    nodes[1].Parent = 0;
+    nodes.emplace_back(-1, 1, 0);
     nodes[1].SuffLink = 0;
     for (int v = 1, count = 1, i = 0; i < text.size(); i++) {
       const auto state = AddLetter(v, count, i);
